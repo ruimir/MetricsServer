@@ -42,7 +42,7 @@ class System_Stats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute(
-            "SELECT to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime,CPUUSAGE,PGAUSED,SGAUSED FROM STATS ORDER BY capturetime DESC")
+            "SELECT * FROM STATS ORDER BY capturetime DESC")
         result = {'system_stats': [dict(zip(tuple(query.keys()), i)) for i in query.cursor]}
         return jsonify(result)
 
@@ -51,7 +51,7 @@ class Tablespace_Stats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute(
-            "SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime,TABLESPACE FROM TABLESPACESTATS ORDER BY capturetime DESC")
+            "SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,CAPTURETIME,TABLESPACE FROM TABLESPACESTATS ORDER BY capturetime DESC")
         result = {'tablespace_stats': [dict(zip(tuple(query.keys()), i)) for i in query.cursor]}
         return jsonify(result)
 
@@ -60,7 +60,7 @@ class Datafile_Stats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute(
-            "SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime,DATAFILE FROM DATAFILESTATS ORDER BY capturetime DESC")
+            "SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,CAPTURETIME,DATAFILE FROM DATAFILESTATS ORDER BY capturetime DESC")
         result = {'datafile_stats': [dict(zip(tuple(query.keys()), i)) for i in query.cursor]}
         return jsonify(result)
 
@@ -69,7 +69,7 @@ class CurrentStats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute("""
-       SELECT  * FROM (SELECT *
+       SELECT  capturetime,CPUUSAGE,PGAUSED,SGAUSED,CURRENT_SESSIONS FROM (SELECT *
        FROM STATS
        ORDER
        BY STATS.CAPTURETIME DESC)
@@ -82,7 +82,8 @@ class CurrentTablespaceStats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute("""
-        SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime,TABLESPACE  FROM TABLESPACESTATS
+                SELECT TABLESPACESTATS.id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,capturetime,TABLESPACESTATS.TABLESPACE,TABLESPACE.NOME  FROM TABLESPACESTATS
+        INNER JOIN TABLESPACE on TABLESPACESTATS.TABLESPACE=TABLESPACE.ID
         WHERE TABLESPACESTATS.CAPTURETIME=(
         SELECT  CAPTURETIME FROM (SELECT *
         FROM STATS
@@ -97,7 +98,7 @@ class CurrentDatafileStats(Resource):
     def get(self):
         conn = db_connect.connect()  # connect to database
         query = conn.execute("""
-        SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime,DATAFILE FROM DATAFILESTATS
+        SELECT id,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,capturetime,DATAFILE FROM DATAFILESTATS
         WHERE DATAFILESTATS.CAPTURETIME=(
         SELECT  CAPTURETIME FROM (SELECT *
         FROM STATS
@@ -112,7 +113,7 @@ class DatafileEvolution(Resource):
     def get(self, datafileid):
         conn = db_connect.connect()  # connect to database
         query = conn.execute("""
-        SELECT ID,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime FROM DATAFILESTATS
+        SELECT ID,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,capturetime FROM DATAFILESTATS
         WHERE DATAFILESTATS.DATAFILE=:datafile
         """, datafile=datafileid)
         result = {'datafile_stats': [dict(zip(tuple(query.keys()), i)) for i in query.cursor]}
@@ -123,7 +124,7 @@ class TablespaceEvolution(Resource):
     def get(self, tablespaceid):
         conn = db_connect.connect()  # connect to database
         query = conn.execute("""
-        SELECT ID,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,to_char(CAPTURETIME,'dd/mm/yyyy hh24:mi:ss') capturetime FROM TABLESPACESTATS
+        SELECT ID,TOTALSPACE,OCCUPIEDSPACE,FREESPACE,PERCENTAGEFREE,capturetime FROM TABLESPACESTATS
         WHERE TABLESPACESTATS.TABLESPACE=:tablespace
         """, tablespace=tablespaceid)
         result = {'tablespace_stats': [dict(zip(tuple(query.keys()), i)) for i in query.cursor]}
